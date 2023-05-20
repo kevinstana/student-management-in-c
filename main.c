@@ -2,6 +2,7 @@
 // οπότε επειδή εδώ έχω κάνει include το students.c δεν ξανακάνω και αυτά
 #include <ctype.h>
 #include "students.c"
+#include <unistd.h>
 
 // Μέθοδος για έλεγχο ονόματος που εισάγει ο χρήστης
 int validateNameInput(char *nameArray) {
@@ -42,8 +43,9 @@ int validateNameInput(char *nameArray) {
     }
 
     int i = -1;
-    while (nameArray[++i] != '\0') { // Το i θα ξεκινάει από το 0 γιατί πρώτα αυξάνεται η τιμή και μετά χρησιμοποιείται στην έκφραση
-        if ((nameArray[i] < 65 && nameArray[i] != 32) || (nameArray[i] > 122)) { // Έλεγχος για το αν έχει δώσει μόνο γράμματα και κενό
+    while (nameArray[++i] != '\0') {
+        // Ο κώδικας μεγαλωνει προς τα δεξιά αλλά έπρεπε να το ελέγξω... :|
+        if ( (nameArray[i] < 65 && nameArray[i] != 32) || ((nameArray[i] > 90) && nameArray[i] < 97) || nameArray[i] > 122) {
             printf("The name can only contain letters.\n");
             return 0;
         }
@@ -80,6 +82,16 @@ int validateNameInput(char *nameArray) {
         return 0;
     }
 
+    if (nameArray[1] == 32) {
+        printf("The first name can be 2 or more characters.\n");
+        return 0;
+    }
+
+    if (nameArray[strlen(nameArray) - 2] == 32) {
+        printf("The last name can be 2 or more characters.\n");
+        return 0;
+    }
+
     return 1;
 }
 
@@ -87,8 +99,6 @@ int validateNameInput(char *nameArray) {
 int validateIdInput(unsigned long *id, char *inputArray) {
     int isInputTooLong = 0;
     int isNotNumber;
-    char maxUL_32bit[] = {"4294967295"}; // max unsigned long για 32bit
-    char maxUL_64bit[] = {"18446744073709551615"}; // max unsigned int για 64bit
 
     if (inputArray[strlen(inputArray) - 1] == '\n') {
         inputArray[strlen(inputArray) - 1] = '\0';
@@ -97,6 +107,11 @@ int validateIdInput(unsigned long *id, char *inputArray) {
         while ((c = getchar()) != '\n' && c != EOF) {
             isInputTooLong = 1;
         }
+    }
+    
+    if (strlen(inputArray) == 0) {
+        printf("Input cannot be empty.\n");
+        return 0;
     }
 
     if (isInputTooLong > 0) {
@@ -114,30 +129,60 @@ int validateIdInput(unsigned long *id, char *inputArray) {
         }
     }
     
+    char *maxUL_64bit = malloc(sizeof(char) * 21);
+    if (maxUL_64bit == NULL) {
+        printf("There isn't enough memory.\n");
+        return 0;
+    }
+
+    char *maxUL_32bit = malloc(sizeof(char) * 11);
+    if (maxUL_32bit == NULL) {
+        printf("There isn't enough memory.\n");
+        return 0;
+    }
+
+    /*
+        Η είσοδος του χρήστη για το id αρχικά αποθηκεύεται σε string. Για να μην γίνει μετατροπή
+        σε unsigned long μιας τιμής μεγαλύτερης από αυτήν που μπορεί να κρατήσει το σύστημα
+        αποθηκεύεται η μέγιστη τιμή unsigned long του συστήματος σαν string. Μετά αφαιρείται
+        από κάθε χαρακτήρα της εισόδου ο αντίστοιχος χαρακτήρας της μέγιστης τιμής. 
+        Αν κάπου το αποτέλεσμα είναι αρνητικό ο χρήστης έδωσε πολύ μεγάλο αριθμό και πρέπει
+        να δώσει νέα τιμή
+    */
     if ((sizeof(unsigned long) == 8) && (strlen(inputArray) == 20)) {
-        for (int i = 0; i < 21; i++) {
-            if ((inputArray[i] - maxUL_64bit[i]) < 0) {
+        strcpy(maxUL_64bit, "18446744073709551615"); // max unsigned int για 64bit
+        for (int i = 0; i < 20; i++) {
+            if ((maxUL_64bit[i] - inputArray[i]) < 0) {
                 printf("The input is too massive to be stored.\n");
+                free(maxUL_32bit);
+                free(maxUL_64bit);
                 return 0;
             }
         } 
     } else if ((sizeof(unsigned long) == 4) && (strlen(inputArray) == 10)) {
-        for (int i = 0; i < 11; i++) {
-            if ((inputArray[i] - maxUL_32bit[i])) {
+        strcpy(maxUL_32bit, "4294967295"); // max unsigned long για 32bit
+        for (int i = 0; i < 10; i++) {
+            if ((maxUL_32bit[i] - inputArray[i])) {
                 printf("The input is too massive to be stored.\n");
+                free(maxUL_32bit);
+                free(maxUL_64bit);
                 return 0;
             }
-        } 
+        }
     }
 
     char *endPtr = &inputArray[strlen(inputArray) + 1]; // Σε αυτό το στοιχείο είναι το '\0'
     *id = strtoul(inputArray, &endPtr, 10); // Το 10 είναι για το δεκαδικο σύστημα
 
+    free(maxUL_32bit);
+    free(maxUL_64bit);
+
     return 1;
 }
 
-int main() {
-    printf("=============== Welcome to the student management program ===============\n");
+int main(int argc, char *argv[]) {
+
+    Result result;
 
     list studentList = (list) malloc(sizeof(struct listR));
     if (studentList == NULL) {
@@ -147,24 +192,65 @@ int main() {
     studentList -> head = NULL;
     studentList -> tail = NULL;
 
+    switch (argc) {
+        case 2:
+            // Έλεγχος αν υπάρχει το αρχείο
+            if (access(argv[1], F_OK) == 0) { // https://stackoverflow.com/questions/230062/whats-the-best-way-to-check-if-a-file-exists-in-c
+                printf("Opening %s...\n", argv[1]);
+                
+                result = load(argv[1], &studentList);
+                if (isError(result)) {
+                    switch(result) {
+                        case MALLOC_ERR:
+                            printf("There isn't enough memory to load the file data.\n");
+                            return 0;
+                        case F_READ_ERR:
+                            printf("There was a problem while reading from %s.\n", argv[1]);
+                            return 0;
+                        case UNKNOWN_ERR:
+                            printf("Something went wrong while interacting with %s.\n", argv[1]);
+                            return 0;
+                    }
+                } else {
+                    printf("Done!\n");
+                }
+            } else {
+                printf("File %s cannot be found.\n", argv[1]); 
+                printf("It will be created for data storing before exiting the program.\n");
+            }
+            break;
+        default:
+            printf("The program requires the name of a file for data storing.\n");
+            printf("If the file you pass as an argument does not exist, it will be created by the program before exiting.\n");
+            printf("For example, try running ./a.out students.txt\n");
+            return 0;
+    }
+
+    printf("\n");
+    printf("=============== Welcome to the student management program ===============\n");
+
+    student *s = (student*) malloc(sizeof(student));
+    if (s == NULL) {
+        printf("Seems like there isn't enough memory to create the student list. Aborting.\n");
+        abort();
+    }
+
+    // student s;
+
     int run = 1;
     char option;
     unsigned long id;
-    char idStr[21];
-
-    student s;
-    node n = (node) malloc(sizeof(struct nodeR));
-    if (n == NULL) {
-        printf("Seems like there isn't enough memory. Aborting.\n");
-        abort();
-    }
+    char idStr[21]; // Εδώ(idStr) αποθηκεύεται το id που εισάγει ο χρήστης, για έλεγχο πριν την μετατροπή σε unsigned long
+                    // Ο πίνακας έχει 21 θέσεις γιατί για 64bit η μέγιστη τιμή unsigned long έχει 20 ψηφία, άρα το 
+                    // 21ο είναι για το '\0'. Αν το σύστημα είναι 32bit τα ψηφία θα είναι 10, άρα < 20 οπότε θα χωράει εδώ.
 
     while (run) {
         printf("\n");
 	    printf("Enter the number that corresponds to the option you want to perform.\n");
         printMenu();
 
-        int inputCounter;  // Για να μετρήσει το μέγεθος του input
+        int inputCounter;
+        int invalidOption = 1;
         
         do {
             inputCounter = 1;
@@ -186,33 +272,42 @@ int main() {
             if ( (option < '1' || option > '6') || inputCounter != 1 ) {
                 printf("Oops. Invalid input. You have to enter one of the numbers below.\n");
                 printMenu();
+                continue;
             }    
 
-        } while( (option < '1' || option > '6') || inputCounter != 1 );
+            invalidOption = 0;
+
+        } while(invalidOption);
 
         switch (option) {
             case '1':
                 printf("\n");
-                printf("(Tip: Enter 0 if you want to exit this option.)\n");
+                printf("(Tip: Enter 0 to return to the main menu.)\n");
+                printf("\n");
+                printf("Enter the student's full name."); 
+                printf("The input can be from 5 to 19 characters long.\n");
                 
                 int run1 = 1;
                 while (run1) {
-                    printf("\n");
-                    printf("Enter the student's full name."); 
-                    printf("The input can be from 5 to 19 characters long.\n");
                     printf("Student's full name: ");
-                    fgets(s.name, sizeof(s.name), stdin); // fgets για να παίρνει string από τον χρήστη https://stackoverflow.com/questions/21691843/how-to-correctly-input-a-string-in-c
+                    fgets(s->name, sizeof(s->name), stdin); // fgets για να παίρνει string από τον χρήστη https://stackoverflow.com/questions/21691843/how-to-correctly-input-a-string-in-c
 
-                    int isValidName = validateNameInput(s.name);
+                    int isValidName = validateNameInput(s->name);
                     if (isValidName == 0) {
                         continue;
                     } else if (isValidName == 1) {
-                        int addResult = addStudent(s, studentList);
-                        switch (addResult) {
-                        case NO_ERR:
+                        s->id = 0;
+                        result = addStudent(*s, studentList);
+                        if (isError(result)) {
+                            switch (result) {
+                            case MALLOC_ERR:
+                                printf("There isn't enough memory to add the student. Going back to main menu.\n");
+                                run1 = 0;
+                                break;
+                            }
+                        } else {
                             printf("Student added successfully!\n");
                             run1 = 0;
-                            break;
                         }
                     } else {
                         run1 = 0;
@@ -225,7 +320,7 @@ int main() {
                     break;
                 }
 
-                printf("(Tip: Enter 0 if you want to exit this option.)\n");
+                printf("(Tip: Enter 0 to return to the main menu.)\n");
                 printf("\n");
                 printf("Enter the ID of the student you want to delete.\n");
 
@@ -242,16 +337,19 @@ int main() {
                     if (id == 0) {
                         run2 = 0;
                     } else {
-                        int found = deleteStudentById(id, studentList);
-                        switch (found) {
-                            case NO_ERR:
-                                printf("Deleted student with ID: %lu.\n", id);
-                                run2 = 0;
-                                break;
-                            case SYNTAX_ERR:
+                        result = deleteStudentById(id, studentList);
+                        if (isError(result)) {
+                            switch (result) {
+                            case SYNTAX_ERR: // Εδώ έβαλα SYNTAX_ERR εννοώντας λάθος στο id, με το σκεπτικό ότι 
+                                             // αν υπήρχε syntax error στον κώδικα δεν θα έκανε compile
                                 printf("Could not find the student with ID: %lu.\n", id);
                                 run2 = 0;
                                 break;
+                            }
+                        } else {
+                            printf("Deleted student with ID: %lu.\n", id);
+                            run2 = 0;
+                            break;
                         }
                     }
                 }
@@ -262,7 +360,7 @@ int main() {
                     break;
                 }
 
-                printf("(Tip: Enter 0 if you want to exit this option.)\n");
+                printf("(Tip: Enter 0 to return to the main menu.)\n");
                 printf("\n");
                 printf("Enter the ID of the student you want to find.\n");
 
@@ -279,16 +377,20 @@ int main() {
                     if (id == 0) {
                         run3 = 0;
                     } else {
-                        int found = findStudent(id, studentList, &s);
-                        switch (found) {
-                            case NO_ERR:
-                                printStudent(s);
-                                run3 = 0;
-                                break;
-                            case SYNTAX_ERR:
-                                printf("Could not find the student with ID: %lu.\n", id);
-                                run3 = 0;
-                                break;
+                        result = findStudent(id, studentList, s);
+                        if (isError(result)) {
+                            switch (result) {
+                                case SYNTAX_ERR:
+                                    printf("Could not find the student with ID: %lu.\n", id);
+                                    run3 = 0;
+                                    break;
+                            }
+                        } else {
+                            printf("Found the following student:\n");
+                            printf("\n");
+                            printf("%-20s %s\n", "Name", "ID");
+                            printStudent(*s);
+                            run3 = 0;
                         }
                     }
                 }
@@ -299,9 +401,9 @@ int main() {
                     break;
                 }
 
-                printf("(Tip: Enter 0 if you want to exit this option.)\n");
+                printf("(Tip: Enter 0 to return to the main menu.)\n");
                 printf("\n");
-                printf("Enter the ID of the student you want to find.\n");
+                printf("Enter the ID of the student you want to update.\n");
 
                 int run4_a = 1;
                 while (run4_a) {
@@ -316,15 +418,16 @@ int main() {
                     if (id == 0) {
                         run4_a = 0;
                     } else {
-                        int found = findStudent(id, studentList, &s);
-                        switch (found) {
-                            case NO_ERR:
-                                printStudent(s);
-                                run4_a = 0;
-                                break;
+                        result = findStudent(id, studentList, s);
+                        if (isError(result)) {
+                            switch (result) {
                             case SYNTAX_ERR:
                                 printf("Could not find the student with ID: %lu.\n", id);
                                 break;
+                            }
+                        } else {
+                            printStudent(*s);
+                            run4_a = 0;
                         }
                     }
                 }
@@ -334,29 +437,32 @@ int main() {
                 }
 
                 printf("\n");
-                printf("(Tip: Enter 0 if you want to exit this option.)\n");
+                printf("(Tip: Enter 0 to return to the main menu.)\n");
+                printf("\n");
+                printf("Enter the student's updated full name."); 
+                printf("The input can be from 5 to 19 characters long.\n");
                 
                 int run4_b = 1;
                 while (run4_b) {
-                    printf("\n");
-                    printf("Enter the student's updated full name."); 
-                    printf("The input can be from 5 to 19 characters long.\n");
                     printf("Student's updated full name: ");
-                    fgets(s.name, sizeof(s.name), stdin);
+                    fgets(s->name, sizeof(s->name), stdin);
 
-                    int isValidName = validateNameInput(s.name);
+                    int isValidName = validateNameInput(s->name);
                     if (isValidName == 0) {
                         continue;
                     } else if (isValidName == 1) {
-                        int updateResult = updateStudent(s, studentList);
-                        switch (updateResult) {
-                        case NO_ERR:
-                            printf("Student updated successfully!\n");
-                            run4_b = 0;
-                            break;
+                        s->id = id;
+                        result = updateStudent(*s, studentList);
+                        if (isError(result)) {
+                            switch (result) {
+                            case SYNTAX_ERR:
+                                printf("Something went wrong updating the student.\n");
+                                run4_b = 0;
+                                break;
+                            }
                         }
                     } else {
-                        printf("Something went wrong updating the student.\n");
+                        printf("Student updated successfully!\n");
                         run4_b = 0;
                     }
                 }
@@ -366,7 +472,7 @@ int main() {
                     printf("There are no students as of now. Add some by selecting option 1.\n");
                 } else {
                     printf("\n");
-                    printf("%-20s %s\n", "Name", "ID");
+                    printf("%-4s %-20s %s\n", "", "Name", "ID");
                     printStudents(studentList);
                 }
                 break;
@@ -374,6 +480,7 @@ int main() {
                 printf("Are you sure you want to quit? (y/n): ");
                 char exitOption;
                 int exitInputCounter;
+                int run6 = 1;
 
                 do {
                     exitInputCounter = 1;
@@ -386,18 +493,41 @@ int main() {
 
                     if ( (exitOption != 'y' && exitOption != 'n') || exitInputCounter != 1 ) {
                             printf("I'm silly. I understand only 'y' for yes and 'n' for no :(\n");
-                    }        
-                } while( (exitOption != 'y' && exitOption != 'n') || exitInputCounter != 1 );
+                            continue;
+                    }
+
+                    run6 = 0;
+                } while(run6);
                 
                 if (exitOption == 'y') {
                     printf("\n");
-                    printf("Saving data to students.txt...\n");
-                    printf("Done.\n");
-                    printf("Exiting program...\n");
+                    printf("Saving data to %s...\n", argv[1]);
+                    result = save(argv[1], studentList);
+                    if (isError(result)) {
+                        switch (result) {
+                            case F_WRITE_ERR:
+                                printf("There was a problem while writing to %s.\n", argv[1]);
+                                return 0;
+                            case UNKNOWN_ERR:
+                                printf("Something went opening or closing %s.\n", argv[1]);
+                                return 0;   
+                        }
+                    } else {
+                        printf("Done.\n");
+                    }
+                    node currentNode = studentList->head;
+                    while(currentNode != NULL){
+                        node tmpNode = currentNode->next;
+                        free(currentNode);
+                        currentNode = tmpNode;
+                    }
+                    free(studentList);
+                    free(s);
                     run = 0;
                     break;
                 }
                 break;
         }
     }
+    printf("Exiting program...\n");
 }
