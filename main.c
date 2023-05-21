@@ -156,6 +156,8 @@ int validateIdInput(unsigned long *id, char *inputArray) {
                 printf("The input is too massive to be stored.\n");
                 free(maxUL_32bit);
                 free(maxUL_64bit);
+                maxUL_32bit = NULL;
+                maxUL_64bit = NULL;
                 return 0;
             }
         } 
@@ -166,6 +168,8 @@ int validateIdInput(unsigned long *id, char *inputArray) {
                 printf("The input is too massive to be stored.\n");
                 free(maxUL_32bit);
                 free(maxUL_64bit);
+                maxUL_32bit = NULL;
+                maxUL_64bit = NULL;
                 return 0;
             }
         }
@@ -176,6 +180,8 @@ int validateIdInput(unsigned long *id, char *inputArray) {
 
     free(maxUL_32bit);
     free(maxUL_64bit);
+    maxUL_32bit = NULL;
+    maxUL_64bit = NULL;
 
     return 1;
 }
@@ -189,8 +195,8 @@ int main(int argc, char *argv[]) {
         printf("Seems like there isn't enough memory to create the student list. Aborting.\n");
         abort();
     }
-    studentList -> head = NULL;
-    studentList -> tail = NULL;
+    studentList->head = NULL;
+    studentList->tail = NULL;
 
     switch (argc) {
         case 2:
@@ -207,11 +213,15 @@ int main(int argc, char *argv[]) {
                         case F_READ_ERR:
                             printf("There was a problem while reading from %s.\n", argv[1]);
                             return 0;
+                        case NON_INIT_LIST:
+                            printf("No student data was found in %s.\n", argv[1]);
+                            break;
                         case UNKNOWN_ERR:
                             printf("Something went wrong while interacting with %s.\n", argv[1]);
                             return 0;
                     }
                 } else {
+                    printf("Loading data from %s ...\n", argv[1]);
                     printf("Done!\n");
                 }
             } else {
@@ -522,12 +532,14 @@ int main(int argc, char *argv[]) {
                         currentNode = tmpNode;
                     }
                     free(studentList);
+                    studentList = NULL;
                     free(s);
+                    s = NULL;
                     run = 0;
-                    break;
+                    printf("Exiting program...\n");
+                    // break;
                 }
                 break;
         }
     }
-    printf("Exiting program...\n");
 }

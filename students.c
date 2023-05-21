@@ -74,12 +74,17 @@ Result load(char *c, list *l) {
     }
 
     free(s);
+    s = NULL;
     
-    // Close the file
+    if ((*l)->head == NULL) {
+        return NON_INIT_LIST;
+    }
+
     if (fclose(fp) == EOF) {
-        // printf("Unable to close %s...\n", c);
         return UNKNOWN_ERR;
     };
+
+    
 
     return NO_ERR;
 }
@@ -87,32 +92,34 @@ Result load(char *c, list *l) {
 Result save(char *c, list l) {
     FILE *fp = fopen(c, "w");
     if (fp == NULL) {
-        // printf("Hmm. It seems the %s file cannot open.\n", c);
         return UNKNOWN_ERR;
     }
 
     int result = fprintf(fp, "%-4s %-20s %s\n", "", "Name", "ID");
     if(result < 1) {
-        // printf("Unable to write in %s...\n", c);
         return F_WRITE_ERR;
     }
 
     int i = 0;
     node currentNode = l->head;
-    
+
     while(currentNode != NULL) {       
         if (i < 9) {
-            fprintf(fp, "%d%-3s ", ++i, ")");
+            result = fprintf(fp, "%d%-3s ", ++i, ")");
+            if(result < 1) {
+                return F_WRITE_ERR;
+            }
         } else {
-            fprintf(fp, "%d%-2s ", ++i, ")");
+            result = fprintf(fp, "%d%-2s ", ++i, ")");
+            if(result < 1) {
+                return F_WRITE_ERR;
+            }
         }
 
         // Είδα τον τρόπο που γίνεται αυτό με την fwrite στις διαφάνειες για I/O στη σελίδα 36 αλλά ήθελα να φαίνονται κάπως πιο ωραία
-        // επίσης, είναι από ChatGPT
         result = fprintf(fp, "%-20s %-20lu\n", currentNode->data.name, currentNode->data.id);
         if(result < 1)
         {
-            // printf("Unable to write in %s...\n", c);
             return F_WRITE_ERR;
         }
 
@@ -120,7 +127,6 @@ Result save(char *c, list l) {
     }
     
     if (fclose(fp) == EOF) {
-        // printf("Unable to close %s...\n", c);
         return UNKNOWN_ERR;
     };
 
@@ -140,12 +146,12 @@ Result addStudent(student s, list l) {
     n->data.id = s.id;
     strcpy(n->data.name, s.name);
 
-    if (l->head == NULL) {
+    if (l->head == NULL) { // Προσθήκη στην αρχή της λίστας
         n->next = NULL;
         n->previous = NULL;
         l->head = n;
         l->tail = n;
-    } else {
+    } else { // Προσθήκη στο τέλος της λίστας
         n->next = NULL;
         n->previous = l->tail;
         l->tail->next = n;
@@ -191,9 +197,10 @@ Result deleteStudentById(unsigned long id, list l) {
     }
 
     if (l->head == l->tail) {
+        free(n);
+        n = NULL; // https://stackoverflow.com/questions/1025589/setting-variable-to-null-after-free
         l->head = NULL;
         l->tail = NULL;
-        free(n);
         return NO_ERR;
     }
 
@@ -201,6 +208,7 @@ Result deleteStudentById(unsigned long id, list l) {
         l->head = n->next;
         l->head->previous = NULL;
         free(n);
+        n = NULL;
         return NO_ERR;
     }
 
@@ -208,12 +216,14 @@ Result deleteStudentById(unsigned long id, list l) {
         l->tail = n->previous;
         l->tail->next = NULL;
         free(n);
+        n = NULL;
         return NO_ERR;
     }
 
     n->previous->next = n->next;
     n->next->previous = n->previous;
     free(n);
+    n = NULL;
     return NO_ERR;
 }
 
