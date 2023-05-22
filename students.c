@@ -53,13 +53,14 @@ Result load(char *c, list *l) {
         if (strlen(line) < 2 || !isdigit(line[0]))
             continue;
 
-        char fname[16];
-        char lname[16];
-        char fullName[33]; // Είχε θέμα o compiler χωρίς αυτό, έλεγε ότι πάω να βάλω στο s.name το lname
-                           // με το fname και θα γίνει truncated γιατί συνολικά έχουν μεγαλύτερο μέγεθος από το s.name
-                           // Με το σκεπτικό ότι έχω κάνει ελέγχους στην είσοδο, οπότε ξέρω το πιθανό max μήκος του input 
-                           // είχα βάλει μέχρι 16 στοιχεία ο κάθε πίνακας, 15 χωρίς το '\0' 
-                           // αλλά τελικά έβαλα και το fullName πίνακα για να μη βγάζει warnings ο compiler.
+        char fname[MAXSTRING - 4];
+        char lname[MAXSTRING - 4];
+        char fullName[31]; // Είχε θέμα o compiler χωρίς αυτό (fullName), έλεγε ότι πάω να βάλω στο s.name που έχει μέγεθος 20 το lname
+                           // με το fname που έχουν μέγεθος 16 το καθένα (σύνολο 32, 31 βασικά χωρίς το '\0').
+                           // Αρχικά δεν έβαλα το fullName με το σκεπτικό ότι έχω κάνει ελέγχους στην είσοδο, οπότε ξέρω το πιθανό max μήκος 
+                           // του input (19 χαρακτήρες συνολικά το όνομα, 1 πιάνει το κενό που δεν το παίρνει σαν string η sscanf από κάτω, 
+                           // και τουλάχιστον 2 χαρακτήρες το fname ή lname οπότε 16 για το υπόλοιπο) και το concatenation τους 
+                           // θα χόραγε στο s.name
         sscanf(line, "%*d) %s %s %lu", fname, lname, &s->id);
         result = snprintf(fullName, sizeof(fullName), "%s %s", fname, lname);
         if (result == 0) {

@@ -17,7 +17,7 @@ int validateNameInput(char *nameArray) {
         των 19 χαρακτήρων, δηλαδή αν δεν υπάρχει το '\n', αδειάζει το buffer του input.
         (εδώ βασικά και σωστό μέγιστο μέγεθος να δώσει ο χρήστης, πάλι θα πάει στο else 
         γιατί η συνθήκη για να μπει στο else είναι απλά να μην είναι '\n' το στοιχείο πριν το '\0'.
-        Όμως σε σωστή μέγιστη είσοδο δεν θα πάρει την τιμή 1 το isTooLong γιατί δεν θα μπει στο while.)
+        Όμως σε σωστή μέγιστη είσοδο δεν θα πάρει την τιμή 1 το isTooLong.)
     */
     if (nameArray[strlen(nameArray) - 1] == '\n') {
         nameArray[strlen(nameArray) - 1] = '\0';
@@ -100,6 +100,16 @@ int validateIdInput(unsigned long *id, char *inputArray) {
     int isInputTooLong = 0;
     int isNotNumber;
 
+    // Tο inputArray χωράει 20 χαρακτήρες (χωρίς το '\0'), αν το σύστημα είναι 32bit το μέγιστο unsigned long έχει 10 ψηφία
+    // οπότε αν το inputArray έχει πάνω από 10 χαρακτήρες τότε επιστρέφεται μήνυμα λάθους
+    if ( (sizeof(unsigned long) == 4) && (strlen(inputArray) > 10) ) {
+        printf("Input too long. Try again.\n");
+        int c;
+        while ((c = getchar()) != '\n' && c != EOF);
+        return 0;
+    } 
+
+    // Έλεγχος για είσοδο μικρότερη από 20 ψηφία (ή 10)
     if (inputArray[strlen(inputArray) - 1] == '\n') {
         inputArray[strlen(inputArray) - 1] = '\0';
     } else {
@@ -119,6 +129,7 @@ int validateIdInput(unsigned long *id, char *inputArray) {
         return 0;
     }
 
+    // Έλεγχος για μόνο αριθμούς
     int i = -1;
     isNotNumber = 0;
     while (inputArray[++i] != '\0') {
@@ -150,7 +161,7 @@ int validateIdInput(unsigned long *id, char *inputArray) {
         να δώσει νέα τιμή
     */
     if ((sizeof(unsigned long) == 8) && (strlen(inputArray) == 20)) {
-        strcpy(maxUL_64bit, "18446744073709551615"); // max unsigned int για 64bit
+        strcpy(maxUL_64bit, "18446744073709551615"); // max unsigned long για 64bit
         for (int i = 0; i < 20; i++) {
             if ((maxUL_64bit[i] - inputArray[i]) < 0) {
                 printf("The input is too massive to be stored.\n");
@@ -176,7 +187,7 @@ int validateIdInput(unsigned long *id, char *inputArray) {
     }
 
     char *endPtr = &inputArray[strlen(inputArray) + 1]; // Σε αυτό το στοιχείο είναι το '\0'
-    *id = strtoul(inputArray, &endPtr, 10); // Το 10 είναι για το δεκαδικο σύστημα
+    *id = strtoul(inputArray, &endPtr, 10); // Μετατροπή του string στο inputArray σε unsigned long. Το 10 είναι για το δεκαδικο σύστημα
 
     free(maxUL_32bit);
     free(maxUL_64bit);
@@ -241,11 +252,9 @@ int main(int argc, char *argv[]) {
 
     student *s = (student*) malloc(sizeof(student));
     if (s == NULL) {
-        printf("Seems like there isn't enough memory to create the student list. Aborting.\n");
+        printf("Seems like there isn't enough memory to run the program. Aborting.\n");
         abort();
     }
-
-    // student s;
 
     int run = 1;
     char option;
@@ -269,7 +278,7 @@ int main(int argc, char *argv[]) {
             
             /*
                 Το while αυτό το πήρα από το ChatGPT. Είναι για να αδειάζει το input buffer.
-                Αν έγραφα πχ. asdfasdf θα έπαιρνε σαν πρώρο input το a και στις επόμενες επαναλήψεις
+                Αν έγραφα πχ. asdfasdf θα έπαιρνε σαν πρώτο input το a και στις επόμενες επαναλήψεις
                 της scanf θα συνέχιζε με τη σειρά το input, δηλαδή s μετά d, μετά f κλπ. 
                 Έτσι δηλαδή κρατάει μόνο το 1ο χαρακτήρα και "πετάει" τους υπόλοιπους. 
                 Επίσης έτσι μπορώ να μετρήσω και τους χαρακρήρες εισόδου μέσα στο while.
@@ -319,7 +328,7 @@ int main(int argc, char *argv[]) {
                             printf("Student added successfully!\n");
                             run1 = 0;
                         }
-                    } else {
+                    } else { // Aν ο χρήστης εισάγει 0 για επιστροφή στο menu
                         run1 = 0;
                     }
                 }
@@ -415,6 +424,7 @@ int main(int argc, char *argv[]) {
                 printf("\n");
                 printf("Enter the ID of the student you want to update.\n");
 
+                int goToMenu = 0;
                 int run4_a = 1;
                 while (run4_a) {
                     printf("Student's ID: ");
@@ -433,9 +443,14 @@ int main(int argc, char *argv[]) {
                             switch (result) {
                             case SYNTAX_ERR:
                                 printf("Could not find the student with ID: %lu.\n", id);
+                                goToMenu = 1;
+                                run4_a = 0;
                                 break;
                             }
                         } else {
+                            printf("Found the following student:\n");
+                            printf("\n");
+                            printf("%-20s %s\n", "Name", "ID");
                             printStudent(*s);
                             run4_a = 0;
                         }
@@ -443,6 +458,10 @@ int main(int argc, char *argv[]) {
                 }
 
                 if (id == 0) {
+                    break;
+                }
+
+                if (goToMenu) {
                     break;
                 }
 
@@ -470,9 +489,11 @@ int main(int argc, char *argv[]) {
                                 run4_b = 0;
                                 break;
                             }
+                        } else {
+                            printf("Student updated successfully!\n");
+                            run4_b = 0;
                         }
-                    } else {
-                        printf("Student updated successfully!\n");
+                    } else { // Αν ο χρήστης εισάγει 0 για επιστροφή στο menu
                         run4_b = 0;
                     }
                 }
@@ -519,22 +540,30 @@ int main(int argc, char *argv[]) {
                                 printf("There was a problem while writing to %s.\n", argv[1]);
                                 return 0;
                             case UNKNOWN_ERR:
-                                printf("Something went opening or closing %s.\n", argv[1]);
+                                printf("Something went wrong while opening or closing %s.\n", argv[1]);
                                 return 0;   
                         }
                     } else {
                         printf("Done.\n");
                     }
-                    node currentNode = studentList->head;
-                    while(currentNode != NULL){
-                        node tmpNode = currentNode->next;
-                        free(currentNode);
-                        currentNode = tmpNode;
+
+                    while (studentList->head != NULL) {
+                        node tmpNode = studentList->head;
+                        studentList->head = tmpNode->next;
+                        if (studentList->head != NULL) {
+                            studentList->head->previous = NULL;
+                        }
+                        tmpNode->previous = NULL;
+                        tmpNode->next = NULL;
+                        free(tmpNode);
+                        tmpNode = NULL;
                     }
+
                     free(studentList);
                     studentList = NULL;
                     free(s);
                     s = NULL;
+
                     run = 0;
                     printf("Exiting program...\n");
                     // break;
