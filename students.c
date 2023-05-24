@@ -75,7 +75,7 @@ Result load(char *c, list *l) {
     }
 
     free(s);
-    s = NULL;
+    s = NULL; // https://stackoverflow.com/questions/1025589/setting-variable-to-null-after-free
     
     if ((*l)->head == NULL) {
         return NON_INIT_LIST;
@@ -84,8 +84,6 @@ Result load(char *c, list *l) {
     if (fclose(fp) == EOF) {
         return UNKNOWN_ERR;
     };
-
-    
 
     return NO_ERR;
 }
@@ -197,15 +195,15 @@ Result deleteStudentById(unsigned long id, list l) {
         return result;
     }
 
-    if (l->head == l->tail) {
+    if (l->head == l->tail) { // Αν η λίστα έχει μόνο 1 κόμβο
         free(n);
-        n = NULL; // https://stackoverflow.com/questions/1025589/setting-variable-to-null-after-free
+        n = NULL;
         l->head = NULL;
         l->tail = NULL;
         return NO_ERR;
     }
 
-    if (n == l->head) {
+    if (n == l->head) { // Αν ο κόμβος προς διαγραφή είναι στην αρχή
         l->head = n->next;
         l->head->previous = NULL;
         free(n);
@@ -213,7 +211,7 @@ Result deleteStudentById(unsigned long id, list l) {
         return NO_ERR;
     }
 
-    if (n == l->tail) {
+    if (n == l->tail) { // Αν ο κόμβος προς διαγραφή είναι στο τέλος
         l->tail = n->previous;
         l->tail->next = NULL;
         free(n);
@@ -221,6 +219,7 @@ Result deleteStudentById(unsigned long id, list l) {
         return NO_ERR;
     }
 
+    // Αν ο κόμβος προς διαγραφή είναι μεταξύ δύο άλλων κόμβων
     n->previous->next = n->next;
     n->next->previous = n->previous;
     free(n);

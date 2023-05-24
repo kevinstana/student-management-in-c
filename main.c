@@ -100,16 +100,7 @@ int validateIdInput(unsigned long *id, char *inputArray) {
     int isInputTooLong = 0;
     int isNotNumber;
 
-    // Tο inputArray χωράει 20 χαρακτήρες (χωρίς το '\0'), αν το σύστημα είναι 32bit το μέγιστο unsigned long έχει 10 ψηφία
-    // οπότε αν το inputArray έχει πάνω από 10 χαρακτήρες τότε επιστρέφεται μήνυμα λάθους
-    if ( (sizeof(unsigned long) == 4) && (strlen(inputArray) > 10) ) {
-        printf("Input too long. Try again.\n");
-        int c;
-        while ((c = getchar()) != '\n' && c != EOF);
-        return 0;
-    } 
-
-    // Έλεγχος για είσοδο μικρότερη από 20 ψηφία (ή 10)
+    // Έλεγχος αν ο χρήστης έδωσε λιγότερους από 20 χαρακτήρες και αντικατάσταση του '\n' με '\0' αν αυτό συνέβη
     if (inputArray[strlen(inputArray) - 1] == '\n') {
         inputArray[strlen(inputArray) - 1] = '\0';
     } else {
@@ -118,14 +109,21 @@ int validateIdInput(unsigned long *id, char *inputArray) {
             isInputTooLong = 1;
         }
     }
+
+    // Tο inputArray χωράει 20 χαρακτήρες (χωρίς το '\0'). Αν το σύστημα είναι 32bit το μέγιστο unsigned long έχει 10 ψηφία
+    // οπότε αν το inputArray έχει πάνω από 10 χαρακτήρες τότε επιστρέφεται μήνυμα λάθους
+    if ( (sizeof(unsigned long) == 4) && (strlen(inputArray) > 10) ) {
+        printf("Input too long. Try again.\n");
+        return 0;
+    }
     
-    if (strlen(inputArray) == 0) {
-        printf("Input cannot be empty.\n");
+    if (isInputTooLong) {
+        printf("Input too long. Try again.\n");
         return 0;
     }
 
-    if (isInputTooLong > 0) {
-        printf("Input too long. Try again.\n");
+    if (strlen(inputArray) == 0) {
+        printf("Input cannot be empty.\n");
         return 0;
     }
 
@@ -135,7 +133,7 @@ int validateIdInput(unsigned long *id, char *inputArray) {
     while (inputArray[++i] != '\0') {
         if (inputArray[i] < 48 || inputArray[i] > 57) {
             isNotNumber = 1;
-            printf("The ID has to contain only numbers. Try again\n");
+            printf("The ID can contain only numbers. Try again\n");
             return 0;
         }
     }
@@ -162,8 +160,18 @@ int validateIdInput(unsigned long *id, char *inputArray) {
     */
     if ((sizeof(unsigned long) == 8) && (strlen(inputArray) == 20)) {
         strcpy(maxUL_64bit, "18446744073709551615"); // max unsigned long για 64bit
-        for (int i = 0; i < 20; i++) {
-            if ((maxUL_64bit[i] - inputArray[i]) < 0) {
+
+        if ( (maxUL_64bit[0] - inputArray[0]) < 0 ) {
+                printf("The input is too massive to be stored.\n");
+                free(maxUL_32bit);
+                free(maxUL_64bit);
+                maxUL_32bit = NULL;
+                maxUL_64bit = NULL;
+                return 0;
+        }
+
+        for (int i = 1; i < 20; i++) {
+            if ( ((maxUL_64bit[i] - inputArray[i]) < 0) && ((maxUL_64bit[i - 1] - inputArray[i - 1]) <= 0) ) {
                 printf("The input is too massive to be stored.\n");
                 free(maxUL_32bit);
                 free(maxUL_64bit);
@@ -174,8 +182,18 @@ int validateIdInput(unsigned long *id, char *inputArray) {
         } 
     } else if ((sizeof(unsigned long) == 4) && (strlen(inputArray) == 10)) {
         strcpy(maxUL_32bit, "4294967295"); // max unsigned long για 32bit
-        for (int i = 0; i < 10; i++) {
-            if ((maxUL_32bit[i] - inputArray[i])) {
+
+        if ( (maxUL_32bit[0] - inputArray[0]) < 0 ) {
+                printf("The input is too massive to be stored.\n");
+                free(maxUL_32bit);
+                free(maxUL_64bit);
+                maxUL_32bit = NULL;
+                maxUL_64bit = NULL;
+                return 0;
+        }
+
+        for (int i = 1; i < 10; i++) {
+            if ( ((maxUL_32bit[i] - inputArray[i]) < 0) && ((maxUL_32bit[i - 1] - inputArray[i - 1]) <= 0) ) {
                 printf("The input is too massive to be stored.\n");
                 free(maxUL_32bit);
                 free(maxUL_64bit);
@@ -546,6 +564,12 @@ int main(int argc, char *argv[]) {
                     } else {
                         printf("Done.\n");
                     }
+                    // node currentNode = studentList->head;
+                    // while(currentNode != NULL){
+                    //     node tmpNode = currentNode->next;
+                    //     free(currentNode);
+                    //     currentNode = tmpNode;
+                    // }
 
                     while (studentList->head != NULL) {
                         node tmpNode = studentList->head;
@@ -566,7 +590,6 @@ int main(int argc, char *argv[]) {
 
                     run = 0;
                     printf("Exiting program...\n");
-                    // break;
                 }
                 break;
         }
