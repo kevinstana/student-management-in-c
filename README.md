@@ -10,3 +10,6 @@ gcc -c main.c
 ```bash
 gcc -o main students.o main.o
 ```
+```bash
+./main students.txt
+```
