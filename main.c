@@ -24,22 +24,22 @@ int validateNameInput(char *nameArray) {
     } else {
         int c;
         while ((c = getchar()) != '\n' && c != EOF) {
-            isInputTooLong = 1;
+            isInputTooLong = TRUE;
         }
     }
 
     if (strlen(nameArray) == 1 && nameArray[0] == '0') {
-        return 2;
+        return 2; // 2 σημαίνει ότι έδωσε 0 για είσοδο άρα θέλει να επιστρέψει στο menu
     }
 
     if (strlen(nameArray) < 5) {
         printf("The name you entered is too short.\n");
-        return 0;
+        return FALSE;
     }
 
     if (isInputTooLong) {
         printf("The name you entered is too long.\n");
-        return 0;
+        return FALSE;
     }
 
     int i = -1;
@@ -47,7 +47,7 @@ int validateNameInput(char *nameArray) {
         // Ο κώδικας μεγαλωνει προς τα δεξιά αλλά έπρεπε να το ελέγξω... :|
         if ( (nameArray[i] < 65 && nameArray[i] != 32) || ((nameArray[i] > 90) && nameArray[i] < 97) || nameArray[i] > 122) {
             printf("The name can only contain letters.\n");
-            return 0;
+            return FALSE;
         }
 
         if (nameArray[i] == 32) {
@@ -60,39 +60,39 @@ int validateNameInput(char *nameArray) {
 
     if (spaceCounter > 1) {
         printf("Too many spaces.\n");
-        return 0;
+        return FALSE;
     } else if (spaceCounter < 1) {
         printf("There has to be a space between the first name and the last name.\n");
-        return 0;
+        return FALSE;
     }
 
     if (firstSpacePosition == 0) {
         printf("The name cannot begin with space.\n");
-        return 0;
+        return FALSE;
     } else if (firstSpacePosition == strlen(nameArray) - 1) {
         printf("The name cannot end with space.\n");
-        return 0;
+        return FALSE;
     }
 
-    int f_name = isupper(nameArray[0]);
-    int l_name = isupper(nameArray[++firstSpacePosition]);
+    int fNameUpper = isupper(nameArray[0]);
+    int lNameUpper = isupper(nameArray[++firstSpacePosition]);
 
-    if (f_name == 0 || l_name == 0) {
+    if (fNameUpper == 0 || lNameUpper == 0) {
         printf("The first name and the last name have to begin with a capital letter.\n");
-        return 0;
+        return FALSE;
     }
 
     if (nameArray[1] == 32) {
-        printf("The first name can be 2 or more characters.\n");
-        return 0;
+        printf("The first name can be 2 or more characters long.\n");
+        return FALSE;
     }
 
     if (nameArray[strlen(nameArray) - 2] == 32) {
-        printf("The last name can be 2 or more characters.\n");
-        return 0;
+        printf("The last name can be 2 or more characters long.\n");
+        return FALSE;
     }
 
-    return 1;
+    return TRUE;
 }
 
 // Μέθοδος για έλεγχο του ID που εισάγει ο χρήστης
@@ -106,7 +106,7 @@ int validateIdInput(unsigned long *id, char *inputArray) {
     } else {
         int c;
         while ((c = getchar()) != '\n' && c != EOF) {
-            isInputTooLong = 1;
+            isInputTooLong = TRUE;
         }
     }
 
@@ -114,17 +114,18 @@ int validateIdInput(unsigned long *id, char *inputArray) {
     // οπότε αν το inputArray έχει πάνω από 10 χαρακτήρες τότε επιστρέφεται μήνυμα λάθους
     if ( (sizeof(unsigned long) == 4) && (strlen(inputArray) > 10) ) {
         printf("Input too long. Try again.\n");
-        return 0;
+        return FALSE;
     }
     
+    // Έλεγχος για μεγάλη είσοδο σε 64bit σύστημα
     if (isInputTooLong) {
         printf("Input too long. Try again.\n");
-        return 0;
+        return FALSE;
     }
 
     if (strlen(inputArray) == 0) {
         printf("Input cannot be empty.\n");
-        return 0;
+        return FALSE;
     }
 
     // Έλεγχος για μόνο αριθμούς
@@ -134,85 +135,37 @@ int validateIdInput(unsigned long *id, char *inputArray) {
         if (inputArray[i] < 48 || inputArray[i] > 57) {
             isNotNumber = 1;
             printf("The ID can contain only numbers. Try again\n");
-            return 0;
+            return FALSE;
         }
-    }
-    
-    char *maxUL_64bit = malloc(sizeof(char) * 21);
-    if (maxUL_64bit == NULL) {
-        printf("There isn't enough memory.\n");
-        return 0;
-    }
-
-    char *maxUL_32bit = malloc(sizeof(char) * 11);
-    if (maxUL_32bit == NULL) {
-        printf("There isn't enough memory.\n");
-        return 0;
     }
 
     /*
         Η είσοδος του χρήστη για το id αρχικά αποθηκεύεται σε string. Για να μην γίνει μετατροπή
         σε unsigned long μιας τιμής μεγαλύτερης από αυτήν που μπορεί να κρατήσει το σύστημα
-        αποθηκεύεται η μέγιστη τιμή unsigned long του συστήματος σαν string. Μετά αφαιρείται
-        από κάθε χαρακτήρα της εισόδου ο αντίστοιχος χαρακτήρας της μέγιστης τιμής. 
-        Αν κάπου το αποτέλεσμα είναι αρνητικό ο χρήστης έδωσε πολύ μεγάλο αριθμό και πρέπει
-        να δώσει νέα τιμή
+        αποθηκεύεται η μέγιστη τιμή unsigned long του συστήματος σαν string. Μετά γίνεται σύγκριση 
+        αν το max value είναι μικρότερο από το id που έδωσε ο χρήστης. 
     */
     if ((sizeof(unsigned long) == 8) && (strlen(inputArray) == 20)) {
-        strcpy(maxUL_64bit, "18446744073709551615"); // max unsigned long για 64bit
+        char maxUL_64bit[] = {"18446744073709551615"}; // max unsigned long για 64bit
 
-        if ( (maxUL_64bit[0] - inputArray[0]) < 0 ) {
+            if ( (strcmp(maxUL_64bit, inputArray)) < 0) {
                 printf("The input is too massive to be stored.\n");
-                free(maxUL_32bit);
-                free(maxUL_64bit);
-                maxUL_32bit = NULL;
-                maxUL_64bit = NULL;
-                return 0;
-        }
-
-        for (int i = 1; i < 20; i++) {
-            if ( ((maxUL_64bit[i] - inputArray[i]) < 0) && ((maxUL_64bit[i - 1] - inputArray[i - 1]) <= 0) ) {
-                printf("The input is too massive to be stored.\n");
-                free(maxUL_32bit);
-                free(maxUL_64bit);
-                maxUL_32bit = NULL;
-                maxUL_64bit = NULL;
-                return 0;
+                return FALSE;
             }
-        } 
+
     } else if ((sizeof(unsigned long) == 4) && (strlen(inputArray) == 10)) {
-        strcpy(maxUL_32bit, "4294967295"); // max unsigned long για 32bit
+        char maxUL_32bit[] = {"4294967295"}; // max unsigned long για 32bit
 
-        if ( (maxUL_32bit[0] - inputArray[0]) < 0 ) {
+        if ( (strcmp(maxUL_32bit, inputArray)) < 0) {
                 printf("The input is too massive to be stored.\n");
-                free(maxUL_32bit);
-                free(maxUL_64bit);
-                maxUL_32bit = NULL;
-                maxUL_64bit = NULL;
-                return 0;
-        }
-
-        for (int i = 1; i < 10; i++) {
-            if ( ((maxUL_32bit[i] - inputArray[i]) < 0) && ((maxUL_32bit[i - 1] - inputArray[i - 1]) <= 0) ) {
-                printf("The input is too massive to be stored.\n");
-                free(maxUL_32bit);
-                free(maxUL_64bit);
-                maxUL_32bit = NULL;
-                maxUL_64bit = NULL;
-                return 0;
+                return FALSE;
             }
-        }
     }
 
     char *endPtr = &inputArray[strlen(inputArray) + 1]; // Σε αυτό το στοιχείο είναι το '\0'
     *id = strtoul(inputArray, &endPtr, 10); // Μετατροπή του string στο inputArray σε unsigned long. Το 10 είναι για το δεκαδικο σύστημα
 
-    free(maxUL_32bit);
-    free(maxUL_64bit);
-    maxUL_32bit = NULL;
-    maxUL_64bit = NULL;
-
-    return 1;
+    return TRUE;
 }
 
 int main(int argc, char *argv[]) {
@@ -277,7 +230,7 @@ int main(int argc, char *argv[]) {
     int run = 1;
     char option;
     unsigned long id;
-    char idStr[21]; // Εδώ(idStr) αποθηκεύεται το id που εισάγει ο χρήστης, για έλεγχο πριν την μετατροπή σε unsigned long
+    char idStr[21]; // Εδώ(idStr) αποθηκεύεται το id που εισάγει ο χρήστης, για έλεγχο πριν την μετατροπή σε unsigned long.
                     // Ο πίνακας έχει 21 θέσεις γιατί για 64bit η μέγιστη τιμή unsigned long έχει 20 ψηφία, άρα το 
                     // 21ο είναι για το '\0'. Αν το σύστημα είναι 32bit τα ψηφία θα είναι 10, άρα < 20 οπότε θα χωράει εδώ.
 
@@ -330,23 +283,28 @@ int main(int argc, char *argv[]) {
                     fgets(s->name, sizeof(s->name), stdin); // fgets για να παίρνει string από τον χρήστη https://stackoverflow.com/questions/21691843/how-to-correctly-input-a-string-in-c
 
                     int isValidName = validateNameInput(s->name);
-                    if (isValidName == 0) {
+
+                    // ξεχώρισα τα if γιατί πολλά if, else εμφωλευμένα με μπέρδευαν
+                    if (isValidName == FALSE) {
                         continue;
-                    } else if (isValidName == 1) {
+                    } 
+                    
+                    if (isValidName == TRUE) {
                         s->id = 0;
                         result = addStudent(*s, studentList);
                         if (isError(result)) {
                             switch (result) {
-                            case MALLOC_ERR:
-                                printf("There isn't enough memory to add the student. Going back to main menu.\n");
-                                run1 = 0;
-                                break;
-                            }
+                                case MALLOC_ERR:
+                                    printf("There isn't enough memory to add the student.\n");
+                                    abort();
+                                }
                         } else {
                             printf("Student added successfully!\n");
                             run1 = 0;
                         }
-                    } else { // Aν ο χρήστης εισάγει 0 για επιστροφή στο menu
+                    }  
+                    
+                    if (isValidName == 2) { // Αν ο χρήστης έδωσε 0, επιστροφή στο menu
                         run1 = 0;
                     }
                 }
@@ -367,27 +325,27 @@ int main(int argc, char *argv[]) {
                     fgets(idStr, sizeof(idStr), stdin);
 
                     int isIdValid = validateIdInput(&id, idStr);
-                    if (isIdValid == 0) {
+                    if (isIdValid == FALSE) {
                         continue;
                     }
 
-                    if (id == 0) {
+                    if (id == 0) { // επιστροφή στο menu
                         run2 = 0;
-                    } else {
-                        result = deleteStudentById(id, studentList);
-                        if (isError(result)) {
-                            switch (result) {
+                        continue;
+                    }
+                    
+                    result = deleteStudentById(id, studentList);
+                    if (isError(result)) {
+                        switch (result) {
                             case SYNTAX_ERR: // Εδώ έβαλα SYNTAX_ERR εννοώντας λάθος στο id, με το σκεπτικό ότι 
                                              // αν υπήρχε syntax error στον κώδικα δεν θα έκανε compile
                                 printf("Could not find the student with ID: %lu.\n", id);
                                 run2 = 0;
                                 break;
                             }
-                        } else {
-                            printf("Deleted student with ID: %lu.\n", id);
-                            run2 = 0;
-                            break;
-                        }
+                    } else {
+                        printf("Deleted student with ID: %lu.\n", id);
+                        run2 = 0;
                     }
                 }
                 break;
@@ -407,28 +365,29 @@ int main(int argc, char *argv[]) {
                     fgets(idStr, sizeof(idStr), stdin);
 
                     int isIdValid = validateIdInput(&id, idStr);
-                    if (isIdValid == 0) {
+                    if (isIdValid == FALSE) {
                         continue;
                     }
 
                     if (id == 0) {
                         run3 = 0;
-                    } else {
-                        result = findStudent(id, studentList, s);
-                        if (isError(result)) {
-                            switch (result) {
-                                case SYNTAX_ERR:
-                                    printf("Could not find the student with ID: %lu.\n", id);
-                                    run3 = 0;
-                                    break;
-                            }
-                        } else {
-                            printf("Found the following student:\n");
-                            printf("\n");
-                            printf("%-20s %s\n", "Name", "ID");
-                            printStudent(*s);
-                            run3 = 0;
+                        continue;
+                    }
+                        
+                    result = findStudent(id, studentList, s);
+                    if (isError(result)) {
+                        switch (result) {
+                            case SYNTAX_ERR:
+                                printf("Could not find the student with ID: %lu.\n", id);
+                                run3 = 0;
+                                break;
                         }
+                    } else {
+                        printf("Found the following student:\n");
+                        printf("\n");
+                        printf("%-20s %s\n", "Name", "ID");
+                        printStudent(*s);
+                        run3 = 0;
                     }
                 }
                 break;
@@ -444,39 +403,38 @@ int main(int argc, char *argv[]) {
 
                 int goToMenu = 0;
                 int run4_a = 1;
+
                 while (run4_a) {
                     printf("Student's ID: ");
                     fgets(idStr, sizeof(idStr), stdin);
 
                     int isIdValid = validateIdInput(&id, idStr);
-                    if (isIdValid == 0) {
+                    if (isIdValid == FALSE) {
                         continue;
                     }
 
                     if (id == 0) {
+                        goToMenu = 1;
                         run4_a = 0;
-                    } else {
-                        result = findStudent(id, studentList, s);
-                        if (isError(result)) {
-                            switch (result) {
+                        continue;
+                    }
+
+                    result = findStudent(id, studentList, s);
+                    if (isError(result)) {
+                        switch (result) {
                             case SYNTAX_ERR:
                                 printf("Could not find the student with ID: %lu.\n", id);
                                 goToMenu = 1;
                                 run4_a = 0;
                                 break;
-                            }
-                        } else {
-                            printf("Found the following student:\n");
-                            printf("\n");
-                            printf("%-20s %s\n", "Name", "ID");
-                            printStudent(*s);
-                            run4_a = 0;
                         }
+                    } else {
+                        printf("Found the following student:\n");
+                        printf("\n");
+                        printf("%-20s %s\n", "Name", "ID");
+                        printStudent(*s);
+                        run4_a = 0;
                     }
-                }
-
-                if (id == 0) {
-                    break;
                 }
 
                 if (goToMenu) {
@@ -495,9 +453,11 @@ int main(int argc, char *argv[]) {
                     fgets(s->name, sizeof(s->name), stdin);
 
                     int isValidName = validateNameInput(s->name);
-                    if (isValidName == 0) {
+                    if (isValidName == FALSE) {
                         continue;
-                    } else if (isValidName == 1) {
+                    } 
+                    
+                    if (isValidName == TRUE) {
                         s->id = id;
                         result = updateStudent(*s, studentList);
                         if (isError(result)) {
@@ -511,7 +471,10 @@ int main(int argc, char *argv[]) {
                             printf("Student updated successfully!\n");
                             run4_b = 0;
                         }
-                    } else { // Αν ο χρήστης εισάγει 0 για επιστροφή στο menu
+                    } 
+                    
+                    // Αν ο χρήστης εισάγει 0 για επιστροφή στο menu
+                    if (isValidName == 2) {
                         run4_b = 0;
                     }
                 }
@@ -564,23 +527,12 @@ int main(int argc, char *argv[]) {
                     } else {
                         printf("Done.\n");
                     }
-                    // node currentNode = studentList->head;
-                    // while(currentNode != NULL){
-                    //     node tmpNode = currentNode->next;
-                    //     free(currentNode);
-                    //     currentNode = tmpNode;
-                    // }
 
-                    while (studentList->head != NULL) {
-                        node tmpNode = studentList->head;
+                    node tmpNode = studentList->head;
+                    while (tmpNode != NULL) {
                         studentList->head = tmpNode->next;
-                        if (studentList->head != NULL) {
-                            studentList->head->previous = NULL;
-                        }
-                        tmpNode->previous = NULL;
-                        tmpNode->next = NULL;
                         free(tmpNode);
-                        tmpNode = NULL;
+                        tmpNode = studentList->head;
                     }
 
                     free(studentList);

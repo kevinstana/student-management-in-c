@@ -22,8 +22,8 @@ void printStudent(student s) {
 }
 
 void printStudents(list l) {
-    node tmpNode = l->head;
     int i = 0;
+    node tmpNode = l->head;
     while (tmpNode != NULL) {
         if (i < 9) {
             printf("%d%-3s ", ++i, ")");
@@ -53,23 +53,23 @@ Result load(char *c, list *l) {
         if (strlen(line) < 2 || !isdigit(line[0]))
             continue;
 
-        char fname[MAXSTRING - 4];
-        char lname[MAXSTRING - 4];
-        char fullName[31]; // Είχε θέμα o compiler χωρίς αυτό (fullName), έλεγε ότι πάω να βάλω στο s.name που έχει μέγεθος 20 το lname
-                           // με το fname που έχουν μέγεθος 16 το καθένα (σύνολο 32, 31 βασικά χωρίς το '\0').
-                           // Αρχικά δεν έβαλα το fullName με το σκεπτικό ότι έχω κάνει ελέγχους στην είσοδο, οπότε ξέρω το πιθανό max μήκος 
-                           // του input (19 χαρακτήρες συνολικά το όνομα, 1 πιάνει το κενό που δεν το παίρνει σαν string η sscanf από κάτω, 
-                           // και τουλάχιστον 2 χαρακτήρες το fname ή lname οπότε 16 για το υπόλοιπο) και το concatenation τους 
-                           // θα χόραγε στο s.name
-        sscanf(line, "%*d) %s %s %lu", fname, lname, &s->id);
-        result = snprintf(fullName, sizeof(fullName), "%s %s", fname, lname);
-        if (result == 0) {
+        // Με τους ελέγχους που έχω κάνει το fname θα έχει max 16 χαρακτήρες
+        // το ίδιο και το lname (το 17o θα είναι το '/0').
+        // Αν ένα από αυτά έχει max χαρακτήρες το άλλο θα έχει 2
+        int maxFname = MAXSTRING - 3;
+        int maxLname = MAXSTRING - 3;
+
+        char fname[maxFname];
+        char lname[maxLname];
+
+        result = sscanf(line, "%*d) %s %s %lu", fname, lname, &s->id);
+        if (result <= 0) {
             return F_READ_ERR;
         }
 
-        if (strlen(fullName) < 20) {
-            strcpy(s->name, fullName);
-        }
+        strcpy(s->name, fname);
+        strcat(s->name, " ");
+        strcat(s->name, lname);
 
         addStudent(*s, *l);
     }
@@ -138,6 +138,8 @@ Result addStudent(student s, list l) {
         return MALLOC_ERR;
     }
 
+    // εδώ είναι έλεγχος για όταν φορτώνει students από το αρχείο, αυτοί ήδη θα έχουν id οπότε δεν φτιάχνει νέο
+    // οπότε όταν φτιάχνεται νέο student στη main παίρνει id = 0 και εδώ του δίνεται νέο
     if (s.id == 0) {
         s.id = generateId();
     }
