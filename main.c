@@ -5,6 +5,15 @@
 #include <unistd.h>
 #include "students.h"
 
+// Δεν πρόσεξα κάτι για readme file στις οδηγίες γι'αυτό το γράφω εδώ.
+// Είδα ότι δεν είναι καλό να κάνω include ένα .c αρχείο οπότε για να τρέξει ο κώδικας
+// (το είδα από: https://riptutorial.com/c/example/3250/calling-a-function-from-another-c-file)
+// θέλει τις εντολές:
+// gcc -Wall -c students.c
+// gcc -Wall -c main.c
+// gcc -o main students.o main.o
+// -Wall είναι για warnings και έτρεχε και χωρίς αυτά
+
 // Μέθοδος για έλεγχο ονόματος που εισάγει ο χρήστης
 int validateNameInput(char *nameArray) {
     int isInputTooLong = 0;
