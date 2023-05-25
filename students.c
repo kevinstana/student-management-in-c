@@ -1,8 +1,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "students.h"
 #include <time.h>
+#include <ctype.h>
+#include "students.h"
 
 Result result;
 
@@ -94,7 +95,7 @@ Result save(char *c, list l) {
         return UNKNOWN_ERR;
     }
 
-    int result = fprintf(fp, "%-4s %-20s %s\n", "", "Name", "ID");
+    size_t result = fprintf(fp, "%-4s %-20s %s\n", "", "Name", "ID");
     if(result < 1) {
         return F_WRITE_ERR;
     }

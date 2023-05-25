@@ -1,8 +1,9 @@
-// Κάποια includes που χρησιμοποιούνται εδώ έχουν γίνει include στο students.c
-// οπότε επειδή εδώ έχω κάνει include το students.c δεν ξανακάνω και αυτά
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include <ctype.h>
-#include "students.c"
 #include <unistd.h>
+#include "students.h"
 
 // Μέθοδος για έλεγχο ονόματος που εισάγει ο χρήστης
 int validateNameInput(char *nameArray) {
