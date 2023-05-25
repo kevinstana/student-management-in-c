@@ -215,7 +215,7 @@ int main(int argc, char *argv[]) {
         default:
             printf("The program requires the name of a file for data storing.\n");
             printf("If the file you pass as an argument does not exist, it will be created by the program before exiting.\n");
-            printf("For example, try running ./a.out students.txt\n");
+            printf("For example, if the executable is ./main, try running ./main students.txt\n");
             return 0;
     }
 
