@@ -48,7 +48,6 @@ int validateNameInput(char *nameArray) {
 
     int i = -1;
     while (nameArray[++i] != '\0') {
-        // Ο κώδικας μεγαλωνει προς τα δεξιά αλλά έπρεπε να το ελέγξω... :|
         if ( (nameArray[i] < 65 && nameArray[i] != 32) || ((nameArray[i] > 90) && nameArray[i] < 97) || nameArray[i] > 122) {
             printf("The name can only contain letters.\n");
             return FALSE;
