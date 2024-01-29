@@ -54,9 +54,6 @@ Result load(char *c, list *l) {
         if (strlen(line) < 2 || !isdigit(line[0]))
             continue;
 
-        // Με τους ελέγχους που έχω κάνει το fname θα έχει max 16 χαρακτήρες
-        // το ίδιο και το lname (το 17o θα είναι το '/0').
-        // Αν ένα από αυτά έχει max χαρακτήρες το άλλο θα έχει 2
         int maxFname = MAXSTRING - 3;
         int maxLname = MAXSTRING - 3;
 
@@ -76,7 +73,7 @@ Result load(char *c, list *l) {
     }
 
     free(s);
-    s = NULL; // https://stackoverflow.com/questions/1025589/setting-variable-to-null-after-free
+    s = NULL;
     
     if ((*l)->head == NULL) {
         return NON_INIT_LIST;
@@ -116,7 +113,6 @@ Result save(char *c, list l) {
             }
         }
 
-        // Είδα τον τρόπο που γίνεται αυτό με την fwrite στις διαφάνειες για I/O στη σελίδα 36 αλλά ήθελα να φαίνονται κάπως πιο ωραία
         result = fprintf(fp, "%-20s %-20lu\n", currentNode->data.name, currentNode->data.id);
         if(result < 1)
         {
@@ -139,8 +135,6 @@ Result addStudent(student s, list l) {
         return MALLOC_ERR;
     }
 
-    // εδώ είναι έλεγχος για όταν φορτώνει students από το αρχείο, αυτοί ήδη θα έχουν id οπότε δεν φτιάχνει νέο
-    // οπότε όταν φτιάχνεται νέο student στη main παίρνει id = 0 και εδώ του δίνεται νέο
     if (s.id == 0) {
         s.id = generateId();
     }
@@ -148,12 +142,12 @@ Result addStudent(student s, list l) {
     n->data.id = s.id;
     strcpy(n->data.name, s.name);
 
-    if (l->head == NULL) { // Προσθήκη στην αρχή της λίστας
+    if (l->head == NULL) {
         n->next = NULL;
         n->previous = NULL;
         l->head = n;
         l->tail = n;
-    } else { // Προσθήκη στο τέλος της λίστας
+    } else {
         n->next = NULL;
         n->previous = l->tail;
         l->tail->next = n;
@@ -186,8 +180,7 @@ Result findStudent(unsigned long id, list l, student *s) {
         }
         tmpNode = tmpNode->next;
     }
-
-    // s->id = -1; // Το id είναι unsgigned long, δεν μπορεί να γίνει -1, γιατί θα πάρει πολύ μεγάλη τιμή
+    
     return SYNTAX_ERR;
 }
 
@@ -198,7 +191,7 @@ Result deleteStudentById(unsigned long id, list l) {
         return result;
     }
 
-    if (l->head == l->tail) { // Αν η λίστα έχει μόνο 1 κόμβο
+    if (l->head == l->tail) {
         free(n);
         n = NULL;
         l->head = NULL;
@@ -206,7 +199,7 @@ Result deleteStudentById(unsigned long id, list l) {
         return NO_ERR;
     }
 
-    if (n == l->head) { // Αν ο κόμβος προς διαγραφή είναι στην αρχή
+    if (n == l->head) {
         l->head = n->next;
         l->head->previous = NULL;
         free(n);
@@ -214,7 +207,7 @@ Result deleteStudentById(unsigned long id, list l) {
         return NO_ERR;
     }
 
-    if (n == l->tail) { // Αν ο κόμβος προς διαγραφή είναι στο τέλος
+    if (n == l->tail) {
         l->tail = n->previous;
         l->tail->next = NULL;
         free(n);
@@ -222,7 +215,6 @@ Result deleteStudentById(unsigned long id, list l) {
         return NO_ERR;
     }
 
-    // Αν ο κόμβος προς διαγραφή είναι μεταξύ δύο άλλων κόμβων
     n->previous->next = n->next;
     n->next->previous = n->previous;
     free(n);
@@ -250,11 +242,6 @@ int isError(Result result) {
 }
 
 unsigned long generateId() {
-    /*
-        Χρησιμοποίησα το χρόνο σαν σπόρο γιατί στο μάθημα "Προσωμοίωση" μας είπαν 
-        ότι αυτός είναι ένας καλός τρόπος για δημιουργία ψευδοτυχαίων αριθμών.
-        Τον κώδικα όμως τον πήρα απ'το ChatGPT.
-    */
     unsigned long seed = time(NULL);
     srand(seed);
     
